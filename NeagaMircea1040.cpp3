@@ -1,0 +1,226 @@
+#include<iostream>
+using namespace std;
+
+
+enum TipCont
+{
+	gratuit, premium, vip
+};
+
+
+class Jucator //jucator in joc online
+{
+private:
+	TipCont tipCont;
+	int puncteEstimateLunar; // target de puncte pe luna
+	int nrLuni;
+	int* puncteLuna;         // vector cu punctele pe fiecare luna
+	static int bonusGlobal;  // bonus de puncte pentru toti jucatorii
+
+public:
+
+	//constructor fara parametri
+	Jucator()
+	{
+		this->tipCont = gratuit;
+		this->puncteEstimateLunar = 100;
+		this->nrLuni = 0;
+		this->puncteLuna = nullptr;
+	}
+
+
+	//constructor cu parametri
+	Jucator(TipCont tip, int puncteEstimate, int nrLuniDate, int* puncteD)
+	{
+		this->tipCont = tip;
+		this->puncteEstimateLunar = puncteEstimate;
+		this->nrLuni = nrLuniDate;
+		this->puncteLuna = new int[nrLuniDate];
+		for (int i = 0; i < nrLuniDate; i++)
+		{
+			this->puncteLuna[i] = puncteD[i];
+		}
+	}
+
+
+	//constructor de copiere
+	Jucator(const Jucator& sursa)
+	{
+		this->tipCont = sursa.tipCont;
+		this->puncteEstimateLunar = sursa.puncteEstimateLunar;
+		this->nrLuni = sursa.nrLuni;
+		if (sursa.nrLuni > 0 && sursa.puncteLuna != nullptr)
+		{
+			this->puncteLuna = new int[sursa.nrLuni];
+			for (int i = 0; i < sursa.nrLuni; i++)
+			{
+				this->puncteLuna[i] = sursa.puncteLuna[i];
+			}
+		}
+		else
+		{
+			this->puncteLuna = nullptr;
+		}
+	}
+
+
+	//destructor
+	~Jucator()
+	{
+		delete[] this->puncteLuna;
+	}
+
+
+	//operator =
+	Jucator& operator=(const Jucator& sursa)
+	{
+		if (this != &sursa)
+		{
+			delete[] this->puncteLuna;
+
+			this->tipCont = sursa.tipCont;
+			this->puncteEstimateLunar = sursa.puncteEstimateLunar;
+			this->nrLuni = sursa.nrLuni;
+
+			if (sursa.nrLuni > 0 && sursa.puncteLuna != nullptr)
+			{
+				this->puncteLuna = new int[sursa.nrLuni];
+				for (int i = 0; i < sursa.nrLuni; i++)
+				{
+					this->puncteLuna[i] = sursa.puncteLuna[i];
+				}
+			}
+			else
+			{
+				this->puncteLuna = nullptr;
+			}
+		}
+		return *this;
+	}
+
+
+	//operator [] pentru acces/modificare puncte pe o luna
+	int& operator[](int index)
+	{
+		//NU e neaparat cea mai safe varianta, dar e in stil de examen
+		if (index >= 0 && index < this->nrLuni)
+		{
+			return this->puncteLuna[index];
+		}
+		else
+		{
+			cout << "Index invalid, se returneaza prima luna!" << endl;
+			return this->puncteLuna[0]; //presupunem ca avem macar o luna
+		}
+	}
+
+
+	//operator de conversie la float: media punctelor pe luna
+	explicit operator float()
+	{
+		if (this->nrLuni == 0 || this->puncteLuna == nullptr)
+			return 0;
+
+		float suma = 0;
+		for (int i = 0; i < this->nrLuni; i++)
+		{
+			suma += this->puncteLuna[i];
+		}
+		//adaugam bonusul global la media generala
+		return suma / this->nrLuni + bonusGlobal;
+	}
+
+
+	//comparam doi jucatori dupa totalul de puncte
+	bool operator>(const Jucator& altul) const
+	{
+		return this->getTotalPuncte() > altul.getTotalPuncte();
+	}
+
+
+	//metoda care da scorul maxim pe o luna
+	int getMaxPuncte() const
+	{
+		if (this->nrLuni == 0 || this->puncteLuna == nullptr)
+			return -1;
+
+		int max = this->puncteLuna[0];
+		for (int i = 1; i < this->nrLuni; i++)
+		{
+			if (this->puncteLuna[i] > max)
+			{
+				max = this->puncteLuna[i];
+			}
+		}
+		return max;
+	}
+
+
+	//totalul punctelor pe toate lunile
+	int getTotalPuncte() const
+	{
+		int s = 0;
+		for (int i = 0; i < this->nrLuni; i++)
+		{
+			s += this->puncteLuna[i];
+		}
+		return s;
+	}
+
+
+	friend ostream& operator<<(ostream& out, const Jucator& j);
+};
+
+int Jucator::bonusGlobal = 5; //valoare pentru toti jucatorii
+
+
+ostream& operator<<(ostream& out, const Jucator& j)
+{
+	out << "Tip cont: " << j.tipCont << endl;
+	out << "Puncte estimate lunar: " << j.puncteEstimateLunar << endl;
+	out << "Numar luni: " << j.nrLuni << endl;
+	out << "Puncte pe luni: ";
+	for (int i = 0; i < j.nrLuni; i++)
+	{
+		out << j.puncteLuna[i] << " ";
+	}
+	out << endl;
+	out << "Total puncte: " << j.getTotalPuncte() << endl;
+	out << "Punctaj maxim pe o luna: " << j.getMaxPuncte() << endl;
+	out << endl;
+	return out;
+}
+
+
+int main()
+{
+	Jucator j; // constructor implicit
+
+	//                       0    1    2
+	Jucator j1(premium, 500, 3, new int[3]{450, 520, 480});
+	Jucator j2(j1); //constructor de copiere
+
+	j = j1; //operator=
+
+	//folosim operatorul []
+	j1[1] = 600; //modific punctajul din luna a doua
+
+	cout << "Media punctelor lunare pentru j1 (cu bonusGlobal): " << (float)j1 << endl;
+
+	cout << "Jucatorul j1:" << endl;
+	cout << j1;
+
+	cout << "Jucatorul j2 (copie):" << endl;
+	cout << j2;
+
+	if (j1 > j2)
+	{
+		cout << "j1 are mai multe puncte totale decat j2" << endl;
+	}
+	else
+	{
+		cout << "j1 NU are mai multe puncte totale decat j2 (sunt egale sau mai mici)" << endl;
+	}
+
+	return 0;
+}
